@@ -37,7 +37,7 @@ func getMovies () async -> [MovieBrief] {
     request.timeoutInterval = 10 // saniye
     request.allHTTPHeaderFields = [
         "accept": "application/json",
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI4MGE4YzFlNmVjYWVkMTlmMTA2M2E0ZWYzZjQwMjRmOCIsIm5iZiI6MTc0NzY4NTU2MS41NTEsInN1YiI6IjY4MmI5MGI5MDNkYzdmNGVmMmRiMmRiOCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.wCsOJs6GdtmKljs7oJHoX-jCHBx8MRce0fH-JrKdqBA"
+        "Authorization": "Bearer \(ProcessInfo.processInfo.environment["TMDB_BEARER_TOKEN"] ?? "")"
     ]
 
     do {
