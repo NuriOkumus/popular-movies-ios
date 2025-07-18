@@ -1,0 +1,34 @@
+# Görev: Popüler Filmleri Listeleyen Basit Bir Movie App
+
+## Amaç
+Bir API’dan veri çekip kullanıcıya liste ve detay ekranında sunan, hem UIKit hem SwiftUI kullanılan basit bir uygulama geliştirmek.
+
+## Task Tanımı
+
+### API
+The Movie Database API ([https://developer.themoviedb.org/docs/getting-started](https://developer.themoviedb.org/docs/getting-started)) kullanılacak.  
+API’ın nasıl çalıştığını dokümantasyondan anlayıp, popüler filmleri listeleyen endpoint’i kullanmanı bekliyoruz.
+
+### Uygulama Akışı
+
+#### 1. İlk Ekran
+- Basit bir `UINavigationController` üzerinde çalışan liste ekranı (UIKit ile yazılacak).
+- Navigation Bar'da bir başlık olacak (örneğin "Popular Movies").
+- Liste hücrelerinde film afişi thumbnail ve film başlığı gösterilecek.
+- Veriler API'dan çekilecek.
+
+#### 2. Detay Ekranı
+- Liste elemanına tıklanınca detay ekranına geçilecek (push transition).
+- Detay ekranı SwiftUI ile yazılacak.
+- Detay ekranında büyük afiş görseli, film başlığı ve film açıklaması yer alacak.
+- "Back" butonu ile listeye geri dönülecek.
+
+## Teknik Beklentiler
+- UIKit + SwiftUI birlikte kullanımını bekliyoruz.
+- Networking ve UI geliştirme kısmında herhangi bir 3rd party library kullanmak istersen bu serbest.
+- Basit bir görsellik yeterli, mükemmel tasarım beklenmiyor.
+- Kodun anlaşılır ve düzenli olması iyi olur.
+
+## Teslim Şekli
+- Projeyi bir GitHub repository olarak paylaşmanı istiyoruz. Bundaki amaç Git sürecine de aşina olmak. Kişisel hesabına yükleyebilirsin, bir hesabın yoksa açman iyi olur.
+- Takıldığın herhangi bir nokta olursa her zaman destek alabilirsin.
