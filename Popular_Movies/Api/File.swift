@@ -36,10 +36,9 @@ func getMovies () async -> [MovieBrief] {
     request.httpMethod = "GET"
     request.timeoutInterval = 10 // saniye
     request.allHTTPHeaderFields = [
-        "accept": "application/json",
-        "Authorization": "Bearer \(ProcessInfo.processInfo.environment["TMDB_BEARER_TOKEN"] ?? "")"
-    ]
-
+            "accept": "application/json",
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI4MGE4YzFlNmVjYWVkMTlmMTA2M2E0ZWYzZjQwMjRmOCIsIm5iZiI6MTc0NzY4NTU2MS41NTEsInN1YiI6IjY4MmI5MGI5MDNkYzdmNGVmMmRiMmRiOCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.wCsOJs6GdtmKljs7oJHoX-jCHBx8MRce0fH-JrKdqBA"
+        ]
     do {
         // 4. Asenkron ağ çağrısı
         let (data, _) = try await URLSession.shared.data(for: request)
