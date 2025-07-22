@@ -73,6 +73,18 @@ final class MovieTableViewCell: UITableViewCell {
     /// Hücreyi verilen `MovieBrief` modeli ile doldurur.
     func configure(with movie: MovieBrief) {
         titleLabel.text = movie.title
+        // Favori durumu: UserDefaults'tan oku 
+        let isFav = UserDefaults.standard.bool(forKey: "fav_\(movie.title)")
+
+        // Yıldız sembolü ve görünümü
+        let symbolName = isFav ? "star.fill" : "star"
+        let starImage  = UIImage(systemName: symbolName)
+        let starView   = UIImageView(image: starImage)
+        starView.tintColor   = isFav ? .systemYellow : .systemGray
+        starView.contentMode = .scaleAspectFit
+
+        // Hücrenin sağ tarafına (accessory view) ata
+        accessoryView = starView
         poster.image = UIImage(systemName: "film") // Placeholder
 
         // Geçerli bir URL yoksa geri dön

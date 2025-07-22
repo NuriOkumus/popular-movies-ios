@@ -16,9 +16,9 @@ struct FavoriteButton: View {
     var body: some View {
         Button {
             isFavourite.toggle()
-            UserDefaults.standard.set(isFavourite, forKey: favoriteKey)
         } label : {
             Label("Favorite", systemImage: isFavourite ? "star.fill" : "star")
+                .imageScale(.large)
                 .labelStyle(IconOnlyLabelStyle())
                 .foregroundStyle(isFavourite ? .yellow : .gray)
         }

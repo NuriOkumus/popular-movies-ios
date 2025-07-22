@@ -32,6 +32,14 @@ class MovieListViewController: UIViewController, UITableViewDataSource, UITableV
         cell.configure(with: movies[indexPath.row])
         return cell
     }
+    
+    func tableView(_ tableView: UITableView,
+                   willDisplay cell: UITableViewCell,
+                   forRowAt indexPath: IndexPath) {
+        if indexPath.row == movies.count - 1 {      // En alttaki hücre gözüktüğünde yeni sayfayı çağırır
+            loadPage(page: currentPage + 1)
+        }
+    }
 
     // MARK: - UITableViewDelegate
     /// Bir satıra dokunulduğunda detay ekranına geçiş yapar
@@ -47,6 +55,10 @@ class MovieListViewController: UIViewController, UITableViewDataSource, UITableV
     // MARK: - Özellikler
     /// Servisten doldurulan filmler dizisi
     var movies: [MovieBrief] = []
+    /// Şu anda yüklü olan son sayfa
+    private var currentPage: Int = 1
+    /// Aynı anda iki kez istek atmayı engellemek için bayrak
+    private var isLoading:  Bool = false
     /// Storyboard üzerinden bağlanan tablo görünümü (IBOutlet)
     @IBOutlet var MovieListTableView: UITableView!
 
@@ -62,19 +74,32 @@ class MovieListViewController: UIViewController, UITableViewDataSource, UITableV
         MovieListTableView.register(MovieTableViewCell.self,
                                forCellReuseIdentifier: MovieTableViewCell.reuseID)
 
-        // Asenkron olarak filmleri indir ve tabloyu yenile
-        Task {
-            movies = await getMovies()
-            MovieListTableView.reloadData()
-        }
+        loadPage(page: 1)               // İlk sayfayı getir
 
         // Delegeler ve veri kaynağı
         MovieListTableView.dataSource = self
         MovieListTableView.delegate   = self
 
-        // Otomatik layout kullandığımız için `addSubview` çağrısı gerekmeyebilir,
-        // ancak storyboard’dan bağlanan outlet’i manuel olarak eklemek sorun
-        // yaratmaz. Önemliyse kaldırılabilir.
-        view.addSubview(MovieListTableView)
+    }
+    /// Belirtilen sayfayı indirir ve tabloyu günceller
+    private func loadPage(page: Int) {  // yeni gelen sayfayı alta ekler
+        guard !isLoading else { return }
+        guard page <= 5 else { return }
+        isLoading = true
+
+                Task {
+            let newMovies = await getMovies(page: page)
+            await MainActor.run {
+                self.movies.append(contentsOf: newMovies)
+                self.MovieListTableView.reloadData()
+                self.currentPage = page
+                self.isLoading = false
+            }
+        }
+    }
+    
+    override func viewWillAppear(_ animated: Bool) { // detaydan ana sayfaya tekrar döndüğünde listeyi günceller
+        super.viewWillAppear(animated)
+        MovieListTableView.reloadData() // detaydan ana sayfaya tekrar döndüğünde listeyi günceller
     }
 }

@@ -24,14 +24,21 @@ import SwiftUI        // SwiftUI çerçevesi: Deklaratif arayüz oluşturma API�
 struct MovieDetailView: View {
     /// Liste ekranından gelen film modeli
     let movie: MovieBrief
-
+    @State private var isFavourite = false
+    
+    init(movie: MovieBrief) {
+        self.movie = movie
+        // “fav_Superman” anahtarındaki değeri oku (yoksa false)
+        _isFavourite = State(initialValue:
+            UserDefaults.standard.bool(forKey: "fav_\(movie.title)") // favori olup olmadığını kontrol 
+        )
+    }
+    
+    
     var body: some View {
         // Kaydırılabilir dikey alan—uzun açıklamalar ekrana sığmayabilir
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-
-                // MARK: Afiş Görseli
-                // `AsyncImage` uzaktan resmi indirir ve durumuna göre arayüz günceller.
                 AsyncImage(url: movie.posterURL500) { phase in
                     switch phase {
                     case .empty:
@@ -69,7 +76,30 @@ struct MovieDetailView: View {
             }
             .padding() // Çevresel iç kenar boşluğu
         }
-        // Büyük başlık yerine satır‑içi başlık görünümü
-        .navigationBarTitleDisplayMode(.inline)
+        
+        .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        FavoriteButton(isFavourite: $isFavourite)
+                    }
+                }
+        .onChange(of: isFavourite) { newValue in // değişimi dinler userdefaults'a entegre eder
+            UserDefaults.standard.set(newValue,
+                                      forKey: "fav_\(movie.title)")
+        }
+    }
+}
+
+
+
+// MARK: - Önizleme
+struct MovieDetailView_Previews: PreviewProvider {
+    static var previews: some View {
+        NavigationView {
+            MovieDetailView(movie: MovieBrief(
+                title: "Inception",
+                overview: "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
+                posterPath: "/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg"
+            ))
+        }
     }
 }

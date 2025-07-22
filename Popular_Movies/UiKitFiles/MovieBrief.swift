@@ -35,6 +35,6 @@ extension MovieBrief {
     /// * `posterPath` nil ise fonksiyon da `nil` döner.
     var posterURL500: URL? {
         guard let posterPath else { return nil }
-        return URL(string: "https://image.tmdb.org/t/p/w200\(posterPath)")
+        return URL(string: "https://image.tmdb.org/t/p/w500\(posterPath)") // w200 -> w500 kalite için 
     }
 }

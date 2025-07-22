@@ -18,7 +18,7 @@ import Foundation
 
 /// TMDB’den popüler filmleri çeker ve `MovieBrief` dizisi olarak döner.
 /// - Returns: `MovieBrief` tipinde popüler film dizisi; hata durumunda boş dizi.
-func getMovies () async -> [MovieBrief] {
+func getMovies (page : Int = 1) async -> [MovieBrief] {  // sonsuz sayfalama 
     // 1. Temel URL oluşturulur.
     let url = URL(string: "https://api.themoviedb.org/3/movie/popular")!
 
@@ -26,7 +26,7 @@ func getMovies () async -> [MovieBrief] {
     var components = URLComponents(url: url, resolvingAgainstBaseURL: true)!
     let queryItems: [URLQueryItem] = [
         URLQueryItem(name: "language", value: "en-US"), // Dil: İngilizce
-        URLQueryItem(name: "page", value: "1"),          // Sayfa: 1
+        URLQueryItem(name: "page", value: "\(page)q"),          // Sayfa: 1
     ]
     // Mevcut queryItems varsa birleştir, yoksa direkt ata
     components.queryItems = components.queryItems.map { $0 + queryItems } ?? queryItems
