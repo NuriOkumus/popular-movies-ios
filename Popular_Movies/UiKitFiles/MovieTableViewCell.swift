@@ -14,6 +14,7 @@
 //────────────────────────────────────────────────────────────
 
 import UIKit
+import Kingfisher
 
 final class MovieTableViewCell: UITableViewCell {
     // MARK: - Static
@@ -66,9 +67,6 @@ final class MovieTableViewCell: UITableViewCell {
         ])
     }
 
-    // MARK: - Basit Görüntü Önbelleği
-    private static let cache = NSCache<NSURL, UIImage>()
-
     // MARK: - Hücre Yapılandırması
     /// Hücreyi verilen `MovieBrief` modeli ile doldurur.
     func configure(with movie: MovieBrief) {
@@ -87,25 +85,14 @@ final class MovieTableViewCell: UITableViewCell {
         accessoryView = starView
         poster.image = UIImage(systemName: "film") // Placeholder
 
-        // Geçerli bir URL yoksa geri dön
-        guard let url = movie.posterURL500 else { return }
-
-        // Önbellekte var mı kontrol et
-        if let cached = Self.cache.object(forKey: url as NSURL) {
-            poster.image = cached
-            return
+        if let url = movie.posterURL500 {
+            poster.kf.setImage(
+                with: url,
+                placeholder: UIImage(systemName: "film"),
+                options: [
+                    .transition(.fade(0.2)),
+                    .cacheOriginalImage
+                ])
         }
-
-        // Afişi asenkron olarak indir
-        URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
-            guard let data,
-                  let image = UIImage(data: data) else { return }
-            // Önbelleğe kaydet
-            Self.cache.setObject(image, forKey: url as NSURL)
-            // Ana iş parçacığında UI güncelle
-            DispatchQueue.main.async {
-                self?.poster.image = image
-            }
-        }.resume()
     }
 }

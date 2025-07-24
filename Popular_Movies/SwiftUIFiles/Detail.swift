@@ -18,6 +18,7 @@
 //  ────────────────────────────────────────────────────────────────────────────
 
 import SwiftUI        // SwiftUI çerçevesi: Deklaratif arayüz oluşturma API’si
+import Kingfisher
 
 // MARK: - Film Detay Görünümü
 /// Popüler filmler listesinden seçilen filmi detaylı gösterir.
@@ -39,28 +40,11 @@ struct MovieDetailView: View {
         // Kaydırılabilir dikey alan—uzun açıklamalar ekrana sığmayabilir
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                AsyncImage(url: movie.posterURL500) { phase in
-                    switch phase {
-                    case .empty:
-                        // Henüz veri gelmedi—küçük yükleniyor göstergesi
-                        ProgressView()
-                    case .success(let img):
-                        // Resim başarıyla indi—esnek boyutlandırıp köşe yumuşat
-                        img.resizable()
-                           .aspectRatio(contentMode: .fit)
-                           .cornerRadius(8)
-                    case .failure:
-                        // İndirme başarısız—yer tutucu simge göster
-                        Image(systemName: "film")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 200)
-                            .foregroundColor(.secondary)
-                    @unknown default:
-                        // Gelecekteki bilinmeyen durumlar için güvenli varsayılan
-                        EmptyView()
-                    }
-                }
+                KFImage(movie.posterURL500)
+                    .placeholder { ProgressView() }
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .cornerRadius(8)
 
                 // MARK: Başlık
                 Text(movie.title)

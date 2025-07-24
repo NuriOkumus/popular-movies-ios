@@ -14,7 +14,10 @@ import UIKit
 import SwiftUI
 
 /// Filmler listesi ekranı (UIKit + SwiftUI entegrasyonu)
-class MovieListViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+class MovieListViewController: UIViewController,
+                               UITableViewDataSource,
+                               UITableViewDelegate,
+                               UISearchResultsUpdating {
     // MARK: - UITableViewDataSource
     /// Tabloda kaç satır olacağını döndürür → filmler dizisinin uzunluğu
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -55,11 +58,29 @@ class MovieListViewController: UIViewController, UITableViewDataSource, UITableV
     // MARK: - Özellikler
     /// Servisten doldurulan filmler dizisi
     var movies: [MovieBrief] = []
+    /// Servisten gelen TAM liste (filtrelenmemiş)
+    private var allMovies: [MovieBrief] = []
+    /// Yalnızca favorileri gösterme modu açık mı?
+    private var showFavoritesOnly: Bool = false
+    /// UserDefaults'ta saklanan favori film başlıkları kümesi
+    private var favoriteTitles: Set<String> {
+        // 1) Yeni format: tek dizi altında saklanan başlıklar
+        let stored = UserDefaults.standard.stringArray(forKey: "favoriteTitles") ?? []
+
+        // 2) Eski format: her film başlığı için "fav_<title>" anahtarı, bool == true
+        let legacy = UserDefaults.standard.dictionaryRepresentation()
+            .filter { $0.key.hasPrefix("fav_") && ($0.value as? Bool) == true }
+            .map { String($0.key.dropFirst(4)) }
+
+        return Set(stored).union(legacy)
+    }
     /// Şu anda yüklü olan son sayfa
     private var currentPage: Int = 1
     /// Aynı anda iki kez istek atmayı engellemek için bayrak
     private var isLoading:  Bool = false
     /// Storyboard üzerinden bağlanan tablo görünümü (IBOutlet)
+    /// Arama çubuğundaki metin
+    private var searchText: String = ""
     @IBOutlet var MovieListTableView: UITableView!
 
     // MARK: - Yaşam Döngüsü
@@ -69,6 +90,24 @@ class MovieListViewController: UIViewController, UITableViewDataSource, UITableV
         // Navigasyon çubuğu başlığı ve büyük başlık tercihi
         navigationItem.title = "Popular Movies"
         navigationController?.navigationBar.prefersLargeTitles = true
+
+        // Arama çubuğu
+        let searchController = UISearchController(searchResultsController: nil)
+        searchController.searchResultsUpdater = self
+        searchController.obscuresBackgroundDuringPresentation = false
+        searchController.searchBar.placeholder = "Search movies"
+        navigationItem.searchController = searchController
+        definesPresentationContext = true
+
+        // Sağ üstte favori filtresi düğmesi
+        let favoritesButton = UIBarButtonItem(
+            image: UIImage(systemName: "star"),
+            style: .plain,
+            target: self,
+            action: #selector(toggleFavorites)
+        )
+        navigationItem.rightBarButtonItem = favoritesButton
+        updateFavoriteIcon()
 
         // Özel hücre sınıfını tabloya kaydet
         MovieListTableView.register(MovieTableViewCell.self,
@@ -90,8 +129,8 @@ class MovieListViewController: UIViewController, UITableViewDataSource, UITableV
                 Task {
             let newMovies = await getMovies(page: page)
             await MainActor.run {
-                self.movies.append(contentsOf: newMovies)
-                self.MovieListTableView.reloadData()
+                self.allMovies.append(contentsOf: newMovies)
+                self.updateMovies()
                 self.currentPage = page
                 self.isLoading = false
             }
@@ -100,6 +139,52 @@ class MovieListViewController: UIViewController, UITableViewDataSource, UITableV
     
     override func viewWillAppear(_ animated: Bool) { // detaydan ana sayfaya tekrar döndüğünde listeyi günceller
         super.viewWillAppear(animated)
-        MovieListTableView.reloadData() // detaydan ana sayfaya tekrar döndüğünde listeyi günceller
+        updateMovies()
+    }
+    
+    /// movies dizisini showFavoritesOnly, favoriteTitles ve arama metnine göre günceller
+    private func updateMovies() {
+        var list = allMovies
+
+        // Favori filtresi
+        if showFavoritesOnly {
+            list = list.filter { favoriteTitles.contains($0.title) }
+        }
+
+        // Arama filtresi
+        if !searchText.isEmpty {
+            let q = searchText.lowercased()
+            list = list.filter { $0.title.lowercased().contains(q) }
+        }
+
+        // Favori filtresindeyken yinelenen başlıkları ayıkla
+        if showFavoritesOnly {
+            var seen = Set<String>()
+            list = list.filter { movie in
+                let inserted = seen.insert(movie.title).inserted
+                return inserted
+            }
+        }
+
+        movies = list
+        MovieListTableView.reloadData()
+    }
+    // MARK: - Favori Filtresi
+    /// Sağ üstteki yıldız düğmesine basıldığında çağrılır
+    @objc private func toggleFavorites() {
+        showFavoritesOnly.toggle()
+        updateFavoriteIcon()
+        updateMovies()
+    }
+
+    /// Yıldız ikonunu showFavoritesOnly durumuna göre günceller
+    private func updateFavoriteIcon() {
+        let symbolName = showFavoritesOnly ? "star.fill" : "star"
+        navigationItem.rightBarButtonItem?.image = UIImage(systemName: symbolName)
+    }
+    // MARK: - UISearchResultsUpdating
+    func updateSearchResults(for searchController: UISearchController) {
+        searchText = searchController.searchBar.text ?? ""
+        updateMovies()
     }
 }
