@@ -9,22 +9,35 @@
 import SwiftUI
 
 struct FavoriteButton: View {
-    @Binding var isFavourite : Bool
-    let favoriteKey = "isFavorite"
-    
-    
+    let movieID: Int
+    @State private var isFavourite: Bool
+
+    init(movieID: Int) {
+        self.movieID = movieID
+        let ids = UserDefaults.standard.array(forKey: "favoriteIDs") as? [Int] ?? []
+        _isFavourite = State(initialValue: ids.contains(movieID))
+    }
+
     var body: some View {
         Button {
-            isFavourite.toggle()
-        } label : {
+            toggleFavorite()
+        } label: {
             Label("Favorite", systemImage: isFavourite ? "star.fill" : "star")
                 .imageScale(.large)
-                .labelStyle(IconOnlyLabelStyle())
+                .labelStyle(.iconOnly)
                 .foregroundStyle(isFavourite ? .yellow : .gray)
         }
     }
-}
 
-#Preview {
-    FavoriteButton(isFavourite: .constant(true))
+    private func toggleFavorite() {
+        var ids = UserDefaults.standard.array(forKey: "favoriteIDs") as? [Int] ?? []
+        if let idx = ids.firstIndex(of: movieID) {
+            ids.remove(at: idx)
+            isFavourite = false
+        } else {
+            ids.append(movieID)
+            isFavourite = true
+        }
+        UserDefaults.standard.set(ids, forKey: "favoriteIDs")
+    }
 }

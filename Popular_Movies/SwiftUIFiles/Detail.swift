@@ -31,7 +31,7 @@ struct MovieDetailView: View {
         self.movie = movie
         // “fav_Superman” anahtarındaki değeri oku (yoksa false)
         _isFavourite = State(initialValue:
-            UserDefaults.standard.bool(forKey: "fav_\(movie.title)") // favori olup olmadığını kontrol 
+            UserDefaults.standard.bool(forKey: "fav_\(movie.id)") // favori olup olmadığını kontrol
         )
     }
     
@@ -63,12 +63,12 @@ struct MovieDetailView: View {
         
         .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        FavoriteButton(isFavourite: $isFavourite)
+                        FavoriteButton(movieID: movie.id)
                     }
                 }
         .onChange(of: isFavourite) { newValue in // değişimi dinler userdefaults'a entegre eder
             UserDefaults.standard.set(newValue,
-                                      forKey: "fav_\(movie.title)")
+                                      forKey: "fav_\(movie.id)")
         }
     }
 }
@@ -82,7 +82,7 @@ struct MovieDetailView_Previews: PreviewProvider {
             MovieDetailView(movie: MovieBrief(
                 title: "Inception",
                 overview: "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
-                posterPath: "/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg"
+                posterPath: "/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg", id: 1
             ))
         }
     }

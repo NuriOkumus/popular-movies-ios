@@ -72,13 +72,14 @@ final class MovieTableViewCell: UITableViewCell {
     func configure(with movie: MovieBrief) {
         titleLabel.text = movie.title
         // Favori durumu: UserDefaults'tan oku 
-        let isFav = UserDefaults.standard.bool(forKey: "fav_\(movie.title)")
+        let favIDs = UserDefaults.standard.array(forKey: "favoriteIDs") as? [Int] ?? []
+        let isFav  = favIDs.contains(movie.id)
 
         // Yıldız sembolü ve görünümü
         let symbolName = isFav ? "star.fill" : "star"
         let starImage  = UIImage(systemName: symbolName)
         let starView   = UIImageView(image: starImage)
-        starView.tintColor   = isFav ? .systemYellow : .systemGray
+        starView.tintColor = isFav ? UIColor.systemYellow : UIColor.systemGray
         starView.contentMode = .scaleAspectFit
 
         // Hücrenin sağ tarafına (accessory view) ata

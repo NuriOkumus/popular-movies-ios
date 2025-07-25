@@ -25,6 +25,7 @@ struct MovieBrief {
     let title: String                // Filmin adı
     let overview: String             // Kısa tanıtım metni
     let posterPath: String?          // "\u002Fabc123.jpg" gibi; tam URL değil
+    let id : Int 
 }
 
 // MARK: - Yardımcı Genişletme

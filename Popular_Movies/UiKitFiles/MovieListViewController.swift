@@ -62,17 +62,11 @@ class MovieListViewController: UIViewController,
     private var allMovies: [MovieBrief] = []
     /// Yalnızca favorileri gösterme modu açık mı?
     private var showFavoritesOnly: Bool = false
-    /// UserDefaults'ta saklanan favori film başlıkları kümesi
-    private var favoriteTitles: Set<String> {
-        // 1) Yeni format: tek dizi altında saklanan başlıklar
-        let stored = UserDefaults.standard.stringArray(forKey: "favoriteTitles") ?? []
-
-        // 2) Eski format: her film başlığı için "fav_<title>" anahtarı, bool == true
-        let legacy = UserDefaults.standard.dictionaryRepresentation()
-            .filter { $0.key.hasPrefix("fav_") && ($0.value as? Bool) == true }
-            .map { String($0.key.dropFirst(4)) }
-
-        return Set(stored).union(legacy)
+    /// UserDefaults'ta saklanan favori film ID kümesi
+    private var favoriteIDs: Set<Int> {
+        // Yeni format: tek dizi altında Int ID'ler
+        let stored = UserDefaults.standard.array(forKey: "favoriteIDs") as? [Int] ?? []
+        return Set(stored)
     }
     /// Şu anda yüklü olan son sayfa
     private var currentPage: Int = 1
@@ -118,6 +112,8 @@ class MovieListViewController: UIViewController,
         // Delegeler ve veri kaynağı
         MovieListTableView.dataSource = self
         MovieListTableView.delegate   = self
+        
+        
 
     }
     /// Belirtilen sayfayı indirir ve tabloyu günceller
@@ -142,28 +138,19 @@ class MovieListViewController: UIViewController,
         updateMovies()
     }
     
-    /// movies dizisini showFavoritesOnly, favoriteTitles ve arama metnine göre günceller
+    /// movies dizisini showFavoritesOnly, favoriteIDs ve arama metnine göre günceller
     private func updateMovies() {
         var list = allMovies
 
         // Favori filtresi
         if showFavoritesOnly {
-            list = list.filter { favoriteTitles.contains($0.title) }
+            list = list.filter { favoriteIDs.contains($0.id) }
         }
 
         // Arama filtresi
         if !searchText.isEmpty {
             let q = searchText.lowercased()
             list = list.filter { $0.title.lowercased().contains(q) }
-        }
-
-        // Favori filtresindeyken yinelenen başlıkları ayıkla
-        if showFavoritesOnly {
-            var seen = Set<String>()
-            list = list.filter { movie in
-                let inserted = seen.insert(movie.title).inserted
-                return inserted
-            }
         }
 
         movies = list

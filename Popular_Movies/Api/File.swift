@@ -55,12 +55,13 @@ func getMovies (page : Int = 1) async -> [MovieBrief] {  // sonsuz sayfalama
         let movies = items.compactMap { dict -> MovieBrief? in
             guard
                 let title    = dict["title"]    as? String,
-                let overview = dict["overview"] as? String
+                let overview = dict["overview"] as? String,
+                let id = dict["id"] as? Int
             else { return nil }
 
             let poster = dict["poster_path"] as? String
 
-            return MovieBrief(title: title, overview: overview, posterPath: poster)
+            return MovieBrief(title: title, overview: overview, posterPath: poster, id : id)
         }
         return movies
     } catch {
