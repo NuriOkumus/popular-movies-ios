@@ -10,7 +10,7 @@
 //  önbelleği (NSCache) ile ağ istekleri en aza indirilir.
 //
 //────────────────────────────────────────────────────────────
-// MARK: - Sınıf Tanımı
+// MARK: - Sınıf Tanımı  
 //────────────────────────────────────────────────────────────
 
 import UIKit

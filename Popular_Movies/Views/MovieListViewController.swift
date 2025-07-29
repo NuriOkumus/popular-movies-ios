@@ -12,16 +12,19 @@
 
 import UIKit
 import SwiftUI
+import Combine
 
 /// Filmler listesi ekranı (UIKit + SwiftUI entegrasyonu)
 class MovieListViewController: UIViewController,
                                UITableViewDataSource,
                                UITableViewDelegate,
                                UISearchResultsUpdating {
+    private var viewModel = MovieListViewModel()
+    private var subscriptions = Set<AnyCancellable>()
     // MARK: - UITableViewDataSource
     /// Tabloda kaç satır olacağını döndürür → filmler dizisinin uzunluğu
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return movies.count
+        return viewModel.movies.count
     }
 
     /// Her satır için hücre oluşturur ve yapılandırır
@@ -32,15 +35,15 @@ class MovieListViewController: UIViewController,
                       withIdentifier: MovieTableViewCell.reuseID,
                       for: indexPath) as! MovieTableViewCell
         // Hücreyi ilgili filmle yapılandır
-        cell.configure(with: movies[indexPath.row])
+        cell.configure(with: viewModel.movies[indexPath.row])
         return cell
     }
     
     func tableView(_ tableView: UITableView,
                    willDisplay cell: UITableViewCell,
                    forRowAt indexPath: IndexPath) {
-        if indexPath.row == movies.count - 1 {      // En alttaki hücre gözüktüğünde yeni sayfayı çağırır
-            loadPage(page: currentPage + 1)
+        if indexPath.row == viewModel.movies.count - 1 {      // En alttaki hücre gözüktüğünde yeni sayfayı çağırır
+            viewModel.loadPage(page: viewModel.currentPage + 1)
         }
     }
 
@@ -49,32 +52,21 @@ class MovieListViewController: UIViewController,
     func tableView(_ tableView: UITableView,
                    didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true) // Görsel geri bildirim
-        let movie = movies[indexPath.row]
+        let movie = viewModel.movies[indexPath.row]
         // SwiftUI ekranını UIKit içerisinde barındırıyoruz
         let detailVC = UIHostingController(rootView: MovieDetailView(movie: movie))
         navigationController?.pushViewController(detailVC, animated: true)
     }
 
     // MARK: - Özellikler
-    /// Servisten doldurulan filmler dizisi
-    var movies: [MovieBrief] = []
-    /// Servisten gelen TAM liste (filtrelenmemiş)
-    private var allMovies: [MovieBrief] = []
-    /// Yalnızca favorileri gösterme modu açık mı?
-    private var showFavoritesOnly: Bool = false
     /// UserDefaults'ta saklanan favori film ID kümesi
     private var favoriteIDs: Set<Int> {
         // Yeni format: tek dizi altında Int ID'ler
         let stored = UserDefaults.standard.array(forKey: "favoriteIDs") as? [Int] ?? []
         return Set(stored)
     }
-    /// Şu anda yüklü olan son sayfa
-    private var currentPage: Int = 1
-    /// Aynı anda iki kez istek atmayı engellemek için bayrak
-    private var isLoading:  Bool = false
     /// Storyboard üzerinden bağlanan tablo görünümü (IBOutlet)
     /// Arama çubuğundaki metin
-    private var searchText: String = ""
     @IBOutlet var MovieListTableView: UITableView!
 
     // MARK: - Yaşam Döngüsü
@@ -107,71 +99,39 @@ class MovieListViewController: UIViewController,
         MovieListTableView.register(MovieTableViewCell.self,
                                forCellReuseIdentifier: MovieTableViewCell.reuseID)
 
-        loadPage(page: 1)               // İlk sayfayı getir
+        viewModel.loadPage(page: 1)               // İlk sayfayı getir
 
         // Delegeler ve veri kaynağı
         MovieListTableView.dataSource = self
         MovieListTableView.delegate   = self
         
-        
-
-    }
-    /// Belirtilen sayfayı indirir ve tabloyu günceller
-    private func loadPage(page: Int) {  // yeni gelen sayfayı alta ekler
-        guard !isLoading else { return }
-        guard page <= 5 else { return }
-        isLoading = true
-
-                Task {
-            let newMovies = await getMovies(page: page)
-            await MainActor.run {
-                self.allMovies.append(contentsOf: newMovies)
-                self.updateMovies()
-                self.currentPage = page
-                self.isLoading = false
+        viewModel.$movies
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.MovieListTableView.reloadData()
             }
-        }
+            .store(in: &subscriptions)
+
     }
     
     override func viewWillAppear(_ animated: Bool) { // detaydan ana sayfaya tekrar döndüğünde listeyi günceller
         super.viewWillAppear(animated)
-        updateMovies()
+        viewModel.favoriteIDs = Set(UserDefaults.standard.array(forKey: "favoriteIDs") as? [Int] ?? [])
+        viewModel.updateSearchResults(for: navigationItem.searchController!)
     }
     
     /// movies dizisini showFavoritesOnly, favoriteIDs ve arama metnine göre günceller
-    private func updateMovies() {
-        var list = allMovies
-
-        // Favori filtresi
-        if showFavoritesOnly {
-            list = list.filter { favoriteIDs.contains($0.id) }
-        }
-
-        // Arama filtresi
-        if !searchText.isEmpty {
-            let q = searchText.lowercased()
-            list = list.filter { $0.title.lowercased().contains(q) }
-        }
-
-        movies = list
-        MovieListTableView.reloadData()
-    }
-    // MARK: - Favori Filtresi
-    /// Sağ üstteki yıldız düğmesine basıldığında çağrılır
+    
     @objc private func toggleFavorites() {
-        showFavoritesOnly.toggle()
+        viewModel.toggleFavorites()
         updateFavoriteIcon()
-        updateMovies()
     }
-
-    /// Yıldız ikonunu showFavoritesOnly durumuna göre günceller
-    private func updateFavoriteIcon() {
-        let symbolName = showFavoritesOnly ? "star.fill" : "star"
-        navigationItem.rightBarButtonItem?.image = UIImage(systemName: symbolName)
-    }
-    // MARK: - UISearchResultsUpdating
+    
     func updateSearchResults(for searchController: UISearchController) {
-        searchText = searchController.searchBar.text ?? ""
-        updateMovies()
+        viewModel.updateSearchResults(for: searchController)
+    }
+    
+    private func updateFavoriteIcon() {
+        navigationItem.rightBarButtonItem?.image = UIImage(systemName: viewModel.favoriteIconName)
     }
 }

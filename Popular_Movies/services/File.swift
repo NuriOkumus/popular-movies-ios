@@ -26,7 +26,7 @@ func getMovies (page : Int = 1) async -> [MovieBrief] {  // sonsuz sayfalama
     var components = URLComponents(url: url, resolvingAgainstBaseURL: true)!
     let queryItems: [URLQueryItem] = [
         URLQueryItem(name: "language", value: "en-US"), // Dil: İngilizce
-        URLQueryItem(name: "page", value: "\(page)q"),          // Sayfa: 1
+        URLQueryItem(name: "page", value: "\(page)"),          // Sayfa: 1
     ]
     // Mevcut queryItems varsa birleştir, yoksa direkt ata
     components.queryItems = components.queryItems.map { $0 + queryItems } ?? queryItems
