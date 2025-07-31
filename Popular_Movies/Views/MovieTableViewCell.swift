@@ -15,6 +15,7 @@
 
 import UIKit
 import Kingfisher
+import Foundation
 
 final class MovieTableViewCell: UITableViewCell {
     // MARK: - Static
@@ -24,6 +25,7 @@ final class MovieTableViewCell: UITableViewCell {
     // MARK: - UI Bileşenleri
     private let poster = UIImageView()
     private let titleLabel = UILabel()
+    private let scoreLabel = UILabel()
 
     // MARK: - Yaşam Döngüsü
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -44,12 +46,20 @@ final class MovieTableViewCell: UITableViewCell {
         // Başlık etiketi
         titleLabel.numberOfLines = 2
         titleLabel.font = .systemFont(ofSize: 15, weight: .medium)
-
+        
+        // Score Etiketi
+        
+        scoreLabel.textColor = .systemGray
+        scoreLabel.font = .systemFont(ofSize: 13, weight: .regular)
+        scoreLabel.text =  "Score"		
+        
         // Alt görünümleri ekle
         contentView.addSubview(poster)
         contentView.addSubview(titleLabel)
+        contentView.addSubview(scoreLabel)
         poster.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        scoreLabel.translatesAutoresizingMaskIntoConstraints = false
 
         // Auto Layout kısıtlamaları
         NSLayoutConstraint.activate([
@@ -63,14 +73,31 @@ final class MovieTableViewCell: UITableViewCell {
             // Başlık konumu
             titleLabel.leadingAnchor.constraint(equalTo: poster.trailingAnchor, constant: 12),
             titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
-            titleLabel.centerYAnchor.constraint(equalTo: poster.centerYAnchor)
+            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
+            
+            // Score konumu
+            scoreLabel.leadingAnchor.constraint(equalTo: poster.trailingAnchor, constant: 12),
+            scoreLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            scoreLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8)
         ])
     }
 
     // MARK: - Hücre Yapılandırması
     /// Hücreyi verilen `MovieBrief` modeli ile doldurur.
-    func configure(with movie: MovieBrief) {
+    func configure(with movie: MovieBrief, score: CGFloat? = 0) {
         titleLabel.text = movie.title
+        
+        // Score gösterimi
+        if let score = score, score > 0 {
+            let starEmoji = String(repeating: "⭐", count: Int(score))
+            let emptyStars = String(repeating: "☆", count: max(0, 5 - Int(score)))
+            let scorevalue = String(format: "%.1f", arguments: [score])
+            scoreLabel.text = "\(starEmoji)\(emptyStars) (\(scorevalue))"
+            scoreLabel.textColor = .systemOrange
+        } else {
+            scoreLabel.text = "☆☆☆☆☆ No rating yet"
+            scoreLabel.textColor = .systemGray
+        }
         // Favori durumu: UserDefaults'tan oku 
         let favIDs = UserDefaults.standard.array(forKey: "favoriteIDs") as? [Int] ?? []
         let isFav  = favIDs.contains(movie.id)

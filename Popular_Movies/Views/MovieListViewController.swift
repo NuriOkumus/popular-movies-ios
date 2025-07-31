@@ -11,16 +11,60 @@
 //  ───────────────────────────────────────────────────────────────────────────
 
 import UIKit
-import SwiftUI
+
 import Combine
+import CoreData
+import SwiftUI
 
 /// Filmler listesi ekranı (UIKit + SwiftUI entegrasyonu)
 class MovieListViewController: UIViewController,
                                UITableViewDataSource,
                                UITableViewDelegate,
-                               UISearchResultsUpdating {
+                               UISearchResultsUpdating,
+                               MyDelegate
+{
+    func sendScore(movieID: Int, score: CGFloat) {
+        movieScores[movieID] = score
+        print("Score saved - Movie ID: \(movieID), Score: \(score)")
+        
+        // Tabloyu yenile (score'ları göster)
+        DispatchQueue.main.async {
+            self.MovieListTableView.reloadData()
+        }
+    }
+    
+    
     private var viewModel = MovieListViewModel()
     private var subscriptions = Set<AnyCancellable>()
+    
+    // Score'ları saklamak için - [MovieID: Score]
+    private var movieScores: [Int: CGFloat] = [:]
+    
+    // CoreData context - SceneDelegate'den geçirilecek
+    var managedObjectContext: NSManagedObjectContext?
+    
+    // MARK: - CoreData Operations
+    
+    /// CoreData'dan tüm score'ları çekip movieScores dictionary'sine yükler
+    private func loadScoresFromCoreData() {
+        guard let context = managedObjectContext else { return }
+        
+        let request: NSFetchRequest<MovieScores> = MovieScores.fetchRequest()
+        
+        do {
+            let savedScores = try context.fetch(request)
+            // CoreData'daki skorları dictionary'ye aktar
+            for scoreEntity in savedScores {
+                movieScores[Int(scoreEntity.id)] = CGFloat(scoreEntity.score)
+            }
+            print("✅ Loaded \(savedScores.count) scores from CoreData")
+        } catch {
+            print("❌ Error loading scores from CoreData: \(error)")
+        }
+    }
+    
+    
+    
     // MARK: - UITableViewDataSource
     /// Tabloda kaç satır olacağını döndürür → filmler dizisinin uzunluğu
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -35,7 +79,9 @@ class MovieListViewController: UIViewController,
                       withIdentifier: MovieTableViewCell.reuseID,
                       for: indexPath) as! MovieTableViewCell
         // Hücreyi ilgili filmle yapılandır
-        cell.configure(with: viewModel.movies[indexPath.row])
+        let movie = viewModel.movies[indexPath.row]
+        let score = movieScores[movie.id] // Score'u al
+        cell.configure(with: movie, score: score)
         return cell
     }
     
@@ -53,8 +99,17 @@ class MovieListViewController: UIViewController,
                    didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true) // Görsel geri bildirim
         let movie = viewModel.movies[indexPath.row]
-        // SwiftUI ekranını UIKit içerisinde barındırıyoruz
-        let detailVC = UIHostingController(rootView: MovieDetailView(movie: movie))
+        // SwiftUI ekranını UIKit içerisinde barındırıyoruz - Delegate ile
+        let detailView = MovieDetailView(movie: movie, delegate: self)
+        
+        // SwiftUI view'a CoreData context'ini environment olarak geçir
+        let detailVC: UIHostingController<AnyView>
+        if let context = managedObjectContext {
+            detailVC = UIHostingController(rootView: AnyView(detailView.environment(\.managedObjectContext, context)))
+        } else {
+            detailVC = UIHostingController(rootView: AnyView(detailView))
+        }
+        
         navigationController?.pushViewController(detailVC, animated: true)
     }
 
@@ -100,6 +155,9 @@ class MovieListViewController: UIViewController,
                                forCellReuseIdentifier: MovieTableViewCell.reuseID)
 
         viewModel.loadPage(page: 1)               // İlk sayfayı getir
+        
+        // CoreData'dan score'ları yükle
+        loadScoresFromCoreData()
 
         // Delegeler ve veri kaynağı
         MovieListTableView.dataSource = self
@@ -118,6 +176,14 @@ class MovieListViewController: UIViewController,
         super.viewWillAppear(animated)
         viewModel.favoriteIDs = Set(UserDefaults.standard.array(forKey: "favoriteIDs") as? [Int] ?? [])
         viewModel.updateSearchResults(for: navigationItem.searchController!)
+        
+        // CoreData'dan score'ları yeniden yükle (detay ekranından döndüğünde)
+        loadScoresFromCoreData()
+        
+        // Tabloyu güncelle
+        DispatchQueue.main.async {
+            self.MovieListTableView.reloadData()
+        }
     }
     
     /// movies dizisini showFavoritesOnly, favoriteIDs ve arama metnine göre günceller
